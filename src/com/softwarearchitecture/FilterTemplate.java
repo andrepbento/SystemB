@@ -73,5 +73,9 @@ abstract public class FilterTemplate extends FilterFramework {
         }
     }
 
+    public boolean hasBytesLeft() {
+        return bytesAvailableInputStreams(inputPipeIndex) <= 0 ? false : true;
+    }
+
     public abstract void run();
 }

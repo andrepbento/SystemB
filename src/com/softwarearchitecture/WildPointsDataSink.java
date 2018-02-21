@@ -6,58 +6,56 @@ import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
-public class WildPointsSinkFilter extends PressureFilter {
+public class WildPointsDataSink extends FilterTemplate {
 
-    private File file = new File("WildPoints.dat");
+    private String fileName = null;
+
+    private String stringFormat = "%-20s %-20s %n";
+
     private Calendar timeStamp = Calendar.getInstance();
     private SimpleDateFormat timeStampFormat = new SimpleDateFormat("yyyy:dd:hh:mm:ss");
 
-    String stringFormat = "%-20s %-20s%n";
 
-    private int nFrame = 0;
-    private double pressure;
+    public WildPointsDataSink(String fileName) {
+        this.fileName = fileName;
+    }
 
+    @Override
     public void run() {
         try {
+            File file = new File(fileName);
+
             file.createNewFile();
             PrintWriter printWriter = new PrintWriter(file);
             printWriter.write(String.format(stringFormat, "Time:", "Pressure(psi):"));
             printWriter.flush();
 
-            System.out.print("\n" + this.getName() + "::WildPointsSinkFilter Reading");
+            System.out.print("\n" + this.getName() + "::Sink Reading");
 
             while (true) {
                 try {
-                    readNextId();
-                    readNextMeasurement();
+                    readNextPairValues();
 
                     if (id == Utils.TIME_ID) {
                         timeStamp.setTimeInMillis(measurement);
-                        nFrame++;
                     } else if (id == Utils.PRESSURE_ID) {
-                        pressure = Double.longBitsToDouble(measurement);
-                    }
-
-                    if (id == Utils.TIME_ID && nFrame > 1 && isWildSpot(pressure)) {
-                        System.out.println("\n" + this.getName() + "::WildPointsSinkFilter Writing" + "\n");
+                        double pressure = Double.longBitsToDouble(measurement);
+                        System.out.println("\n" + this.getName() + "::Sink Writing" + "\n");
                         printWriter.write(String.format(stringFormat,
-                                timeStampFormat.format(timeStamp.getTime()), pressure));
+                                timeStampFormat.format(timeStamp.getTime()),
+                                pressure));
                         printWriter.flush();
                     }
-
-                    writeIdToStream();
-                    writeMeasurementToStream();
-                } // try
-                catch (EndOfStreamException e) {
+                } catch (EndOfStreamException e) {
                     ClosePorts();
-                    System.out.print("\n" + this.getName() + "::WildPointsSinkFilter Exiting; bytes read: " + bytesRead
+                    System.out.print("\n" + this.getName() + "::Sink Exiting; bytes read: " + bytesRead
                             + " bytes written: " + bytesWritten);
                     break;
-                } // catch
-            } // while
+                }
+            }
             printWriter.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
-    } // run
-} // WildPointsSinkFilter
+    }
+}

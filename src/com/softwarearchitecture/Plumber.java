@@ -4,21 +4,35 @@ public class Plumber {
 
     public static void main(String argv[]) {
 
-        SourceFilter sourceFilter = new SourceFilter();
+        SourceFilter sourceFilter = new SourceFilter("FlightData.dat");
+
         TemperatureFilter temperatureFilter = new TemperatureFilter();
         AltitudeFilter altitudeFilter = new AltitudeFilter();
-        SinkFilter sinkFilter = new SinkFilter();
-        WildPointsSinkFilter wildPointsSinkFilter = new WildPointsSinkFilter();
+        WildPointsFilter wildPointsFilter = new WildPointsFilter();
+        RejectedPointsFilter rejectedPointsFilter = new RejectedPointsFilter();
 
-        wildPointsSinkFilter.Connect(sinkFilter);
-        sinkFilter.Connect(altitudeFilter);
+        SinkFilter pressureDataSink = new SinkFilter("OutputB.dat");
+        WildPointsDataSink wildPointsDataSink = new WildPointsDataSink("WildPoints.dat");
+
+        wildPointsDataSink.Connect(rejectedPointsFilter);
+        pressureDataSink.Connect(wildPointsFilter);
+        rejectedPointsFilter.Connect(altitudeFilter);
+        wildPointsFilter.Connect(altitudeFilter);
         altitudeFilter.Connect(temperatureFilter);
         temperatureFilter.Connect(sourceFilter);
 
         sourceFilter.start();
         temperatureFilter.start();
         altitudeFilter.start();
-        sinkFilter.start();
-        wildPointsSinkFilter.start();
-    } // main
-} // Plumber
+        wildPointsFilter.start();
+        rejectedPointsFilter.start();
+        pressureDataSink.start();
+        wildPointsDataSink.start();
+
+        try {
+            pressureDataSink.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+}

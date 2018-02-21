@@ -14,9 +14,9 @@ public class SinkFilter extends FilterTemplate {
     private String fileName = null;
     private String stringFormat = "%-20s %-20s %-20s %-20s %n";
 
-    private double temperature, altitude, pressure = 0;
+    private String temperature, altitude, pressure, pitch;
 
-    private boolean canWrite = false;
+    private boolean isFirstTime = true;
 
     public SinkFilter(String fileName) {
         this.fileName = fileName;
@@ -40,23 +40,23 @@ public class SinkFilter extends FilterTemplate {
                     if (id == Utils.TIME_ID) {
                         timeStamp.setTimeInMillis(measurement);
                     } else if (id == Utils.ALTITUDE_ID) {
-                        altitude = Double.longBitsToDouble(measurement);
+                        altitude = String.valueOf(Double.longBitsToDouble(measurement));
                     } else if (id == Utils.PRESSURE_ID) {
-                        pressure = Double.longBitsToDouble(measurement);
+                        double lPressure = Double.longBitsToDouble(measurement);
+                        if (lPressure < 0) {
+                            pressure = Math.abs(lPressure) + "*";
+                        } else {
+                            pressure = String.valueOf(lPressure);
+                        }
                     } else if (id == Utils.TEMPERATURE_ID) {
-                        temperature = Double.longBitsToDouble(measurement);
-                        canWrite = true;
-                    }
-
-                    if (canWrite) {
+                        temperature = String.valueOf(Double.longBitsToDouble(measurement));
                         System.out.println("\n" + this.getName() + "::Sink Writing" + "\n");
+
                         printWriter.write(String.format(stringFormat,
                                 timeStampFormat.format(timeStamp.getTime()),
                                 temperature, altitude, pressure));
                         printWriter.flush();
-                        canWrite = false;
                     }
-
                 } catch (EndOfStreamException e) {
                     ClosePorts();
                     System.out.print("\n" + this.getName() + "::Sink Exiting; bytes read: " + bytesRead
@@ -65,7 +65,10 @@ public class SinkFilter extends FilterTemplate {
                 }
             }
             printWriter.close();
-        } catch (IOException e) {
+        } catch (
+                IOException e)
+
+        {
             e.printStackTrace();
         }
     }
